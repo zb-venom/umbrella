@@ -1,25 +1,81 @@
-import { createRouter, createWebHistory } from 'vue-router'
-import Home from '../views/Home.vue'
+import { createRouter, createWebHistory } from "vue-router";
 
 const routes = [
   {
-    path: '/',
-    name: 'Home',
-    component: Home
+    path: "/",
+    redirect: "/login",
   },
   {
-    path: '/about',
-    name: 'About',
-    // route level code-splitting
-    // this generates a separate chunk (about.[hash].js) for this route
-    // which is lazy-loaded when the route is visited.
-    component: () => import(/* webpackChunkName: "about" */ '../views/About.vue')
-  }
-]
+    path: "/login",
+    name: "Login",
+    component: () => import("../views/Login.vue"),
+    meta: {
+      title: "Umbrella | Login",
+      guest: true,
+    },
+  },
+  {
+    path: "/signup",
+    name: "Signup",
+    component: () => import("../views/Signup.vue"),
+    meta: {
+      title: "Umbrella | Signup",
+      guest: true,
+    },
+  },
+
+  //
+  // Pages for auth users
+  //
+  {
+    path: "/dialogs",
+    name: "Dialogs",
+    component: () => import("../views/Dialogs.vue"),
+    meta: {
+      title: "Umbrella | Dialogs",
+      requiresAuth: true,
+    },
+  },
+  {
+    path: "/logout",
+    name: "Logout",
+    component: {
+      beforeRouteEnter(to, from, next) {
+        console.log(localStorage);
+        localStorage.jwt = "";
+        next({ path: "/" });
+      },
+    },
+    meta: {
+      title: "Umbrella | Logout",
+      requiresAuth: true,
+    },
+  },
+
+  //
+  // Page not found (ERROR 404)
+  //
+  {
+    path: "/:catchAll(.*)",
+    redirect: "/",
+  },
+];
 
 const router = createRouter({
-  history: createWebHistory(process.env.BASE_URL),
-  routes
-})
+  history: createWebHistory(),
+  routes,
+});
 
-export default router
+router.beforeEach((to, from, next) => {
+  if (to.matched.some((record) => record.meta.requiresAuth)) {
+    if (!localStorage.jwt) next({ path: "/login" });
+    else next();
+  } else if (to.matched.some((record) => record.meta.guest)) {
+    if (localStorage.jwt) next({ path: "/dialogs" });
+    else next();
+  } else {
+    next();
+  }
+});
+
+export default router;
